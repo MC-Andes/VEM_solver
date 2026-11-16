@@ -1,0 +1,8 @@
+include README.md CHANGELOG.md CONTRIBUTING.md mkdocs.yml LEEME.txt
+recursive-include docs *.md
+recursive-include examples *.py
+recursive-include jobs *.sbatch
+recursive-include tests *.py
+recursive-include reference *.md *.py *.txt *.json
+recursive-include .github *.md *.yml
+recursive-include environments *.txt

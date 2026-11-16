@@ -1,0 +1,128 @@
+================================================================================
+HOMOGENIZACION VEM 3D DEL CONCRETO - COMO CORRER LAS SIMULACIONES
+================================================================================
+
+QUE HACE
+--------
+Calcula la matriz constitutiva homogenizada C (6x6) de una probeta de
+concreto a escala mesoscopica, usando el Virtual Element Method de primer
+orden sobre mallas poliedricas.
+
+Impone condiciones de borde cinematicas uniformes (KUBC): se prescribe un
+campo de desplazamiento lineal en todo el contorno, se resuelven seis casos
+de carga (exx, eyy, ezz, gxy, gxz, gyz) y cada solucion da una columna de C.
+De ahi salen el modulo de Young y el coeficiente de Poisson equivalentes.
+
+C se calcula por DOS vias independientes: promedio volumetrico de esfuerzos
+y reacciones del contorno. Deben coincidir; la diferencia (dif_vias) sale en
+el resumen y es un control de calidad.
+
+
+ARCHIVOS
+--------
+vem3d_core.py             Nucleo: lectura, ensamblaje, solver, homogenizacion.
+                          No se ejecuta solo, lo importan los demas.
+batch_heterogeneo_3d.py   Corre todas las mallas con sus materiales reales.
+                          Es el que produce los resultados.
+batch_homogeneo_3d.py     Verificacion: pone el mismo material en todos los
+                          elementos. Como el campo lineal es entonces la
+                          solucion exacta, la C calculada debe reproducir la
+                          isotropa teorica (err_C ~ 1e-15). Sirve para
+                          comprobar una malla, no para producir resultados.
+correr_una_malla.py       Una sola malla, con log detallado de memoria por
+                          etapa y traceback completo si falla. Para probar
+                          o diagnosticar.
+
+
+INSTALACION
+-----------
+    pip install pyamg psutil
+
+pyamg no es opcional: es el solver por defecto (multigrid algebraico). Sin
+el solo queda --solver lu, que no alcanza para las mallas grandes.
+
+
+ESTRUCTURA DE CARPETAS
+----------------------
+    <RAIZ_3D>/
+      CA1_A2_G1/
+        CA1_A2_G1_R01/VEM/   Input_nodos.txt    Input_aristas.txt
+                             Input_caras.txt    input_elements.txt
+                             Propiedades.txt
+        CA1_A2_G1_R02/VEM/   ...
+
+Los resultados quedan en <RAIZ_3D>/Resultados_Heterogeneos/.
+
+
+COMO CORRER
+-----------
+Primero, sin calcular nada, para ver que encuentra las mallas y su tamano:
+
+    python batch_heterogeneo_3d.py --raiz . --listar
+
+Una sola malla, para probar:
+
+    python correr_una_malla.py "CA1_A2_G1\CA1_A2_G1_R01\VEM"
+
+Todas:
+
+    python batch_heterogeneo_3d.py --raiz . --procesos 6 --sin-campos
+
+
+LA MEMORIA ES LA RESTRICCION
+----------------------------
+Es lo unico delicado de este trabajo. La memoria por malla escala con el
+numero de grados de libertad (gdl = 3 x nodos), medido en dos mallas:
+
+    GB = 0.16 + 1.39e-5 * gdl
+
+    124.089 gdl  ->   1.9 GB
+    700.000 gdl  ->   9.9 GB
+  1.840.000 gdl  ->  26 GB
+  3.260.000 gdl  ->  45 GB   (medido)
+  8.294.124 gdl  -> 116 GB   (extrapolado; es la mayor del conjunto)
+
+Hay que elegir --procesos pensando en la MAS GRANDE de la tanda, no en el
+promedio: basta con que una no quepa para que el batch muera ahi. Por eso
+conviene partir la corrida por tamano:
+
+    python batch_heterogeneo_3d.py --raiz . --max-gdl 700000 --procesos 6 --tmp D:\temp_vem --sin-campos
+    python batch_heterogeneo_3d.py --raiz . --min-gdl 700001 --max-gdl 1400000 --procesos 3 --tmp D:\temp_vem --sin-campos
+    python batch_heterogeneo_3d.py --raiz . --min-gdl 1400001 --max-gdl 2900000 --procesos 1 --tmp D:\temp_vem --sin-campos
+
+Las mayores de 2.9 M gdl van de a una y pueden tardar varias horas.
+
+--tmp   El ensamblaje escribe temporales a disco (unos 16 bytes por entrada
+        elemental, hasta ~70 GB en la malla mayor). Apuntalo a una unidad
+        con espacio.
+--sin-campos   No escribe U_*, esfuerzos_* ni deformaciones_*. Ahorra
+        decenas de GB si solo interesa C.
+--procesos auto   Corre primero la malla mas grande sola, mide su pico real
+        y calcula cuantos procesos caben en la RAM libre.
+
+
+EN WINDOWS
+----------
+Correr desde el CMD o el Anaconda Prompt, no desde la consola de Spyder: el
+multiproceso falla ahi. Si se usa Spyder, marcar "Execute in an external
+system terminal" en Run > Configuration per file (Ctrl+F6).
+
+
+QUE MIRAR EN LOS RESULTADOS
+---------------------------
+En cada <CASO>/<R##>/resumen.txt y en RESUMEN_PROPIEDADES.csv:
+
+  E_eq, nu_eq     Las propiedades equivalentes. Deben caer entre las cotas
+                  de Reuss y Voigt de esa fraccion de agregado.
+  dif_vias        Diferencia entre las dos vias de calcular C. Es el control
+                  principal. En el caso homogeneo da ~1e-11.
+  dif_volumen     Suma de volumenes de elementos contra el volumen de la
+                  caja. Debe ser ~1e-15; si no, la malla tiene un problema.
+  err_C           Solo en el caso homogeneo: error contra la C isotropa
+                  teorica. Debe ser ~1e-15.
+  anisotropia     Desviacion de C respecto a su mejor ajuste isotropo.
+  memoria_pico_gb Pico de memoria de esa corrida.
+
+Si una malla da err_C grande en el caso homogeneo, el problema es de esa
+malla, no del metodo: conviene revisarla antes de usar su resultado.
+================================================================================

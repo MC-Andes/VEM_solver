@@ -1,0 +1,8 @@
+site_name: VEM 3D
+nav:
+  - Inicio: index.md
+  - Arquitectura: architecture.md
+  - Hypatia: hypatia.md
+  - Revisión: review.md
+theme:
+  name: material

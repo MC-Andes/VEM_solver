@@ -1,0 +1,3 @@
+VEM 3D: empieza por README.md para instalarlo y probar el ejemplo.
+La guía de Hypatia es opcional y está en docs/hypatia.md.
+El LEEME recibido se preserva en reference/original/LEEME.txt.
