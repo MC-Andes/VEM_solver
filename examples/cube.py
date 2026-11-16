@@ -1,4 +1,4 @@
-"""Genera una malla de cubos para el patch test; ejecutar en Hypatia."""
+"""Genera una malla pequeña de cubos para comprobar la instalación."""
 
 import argparse
 import itertools
@@ -79,25 +79,3 @@ if __name__ == "__main__":
     if args.n < 1:
         parser.error("--n debe ser al menos 1")
     write_mesh(args.output, args.n, args.heterogeneous)
-
-
-def prism_mesh(sides=16):
-    """Un prisma regular con 2*sides vértices: ejercita elementos de muchas caras."""
-    theta = np.linspace(0, 2 * np.pi, sides, endpoint=False)
-    xy = np.column_stack((np.cos(theta), np.sin(theta)))
-    xyz = np.vstack((np.column_stack((xy, np.zeros(sides))), np.column_stack((xy, np.ones(sides)))))
-    nn = len(xyz)
-    nodes = np.column_stack((np.arange(3 * nn).reshape(3, nn).T, xyz, np.zeros((nn, 6))))
-    polygons = [list(range(sides - 1, -1, -1)), list(range(sides, 2 * sides))]
-    polygons += [[i, (i + 1) % sides, (i + 1) % sides + sides, i + sides] for i in range(sides)]
-    edges, faces, lookup = [], [], {}
-    for polygon in polygons:
-        ids = []
-        for a, b in zip(polygon, polygon[1:] + polygon[:1]):
-            key = tuple(sorted((a, b)))
-            if key not in lookup:
-                lookup[key] = len(edges)
-                edges.append([len(edges), a, b])
-            ids.append(lookup[key])
-        faces.append([len(faces)] + ids)
-    return nodes, np.asarray(edges), faces, [[0, 1e6, 0.3] + list(range(len(faces)))]

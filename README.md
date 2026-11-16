@@ -27,6 +27,7 @@ no requiere un clúster ni acceso a un servidor específico. Las mallas grandes
 sí pueden necesitar mucha memoria y espacio en disco, por lo que conviene
 comenzar con el ejemplo pequeño.
 
+Descarga el repositorio desde GitHub con **Code → Download ZIP** y descomprímelo.
 Abre una terminal en la carpeta que contiene este README. Crea un entorno para
 instalar las dependencias del programa sin mezclarlas con otros proyectos:
 
@@ -98,10 +99,31 @@ estos cinco archivos de texto en una misma carpeta:
 | `input_elements.txt` | Las caras de cada elemento y su código de material. |
 | `Propiedades.txt` | El módulo de Young y el coeficiente de Poisson de cada material. |
 
-Estos archivos deben seguir el [formato de entrada](docs/index.md). No basta
-con cambiar el nombre de archivos procedentes de otro programa. Los índices
-comienzan en cero y las unidades deben ser consistentes; se recomienda usar
-metros para las coordenadas y pascales para los módulos elásticos.
+Cada línea representa un nodo, arista, cara, elemento o material. Usa las
+siguientes columnas, separadas por espacios y sin encabezado:
+
+```text
+Input_nodos.txt:    gdl_x gdl_y gdl_z x y z
+Input_aristas.txt:  id nodo_i nodo_j
+Input_caras.txt:    id arista_1 arista_2 ...
+input_elements.txt: id material material2 cara_1 cara_2 ...
+Propiedades.txt:    material E nu
+```
+
+Los grados de libertad (`gdl_x`, `gdl_y`, `gdl_z`) identifican los tres
+desplazamientos de cada nodo. Entre todos los nodos deben aparecer los números
+de 0 a 3N−1, sin repetir, donde N es el número de nodos. Los IDs de nodos,
+aristas, caras y elementos comienzan en cero y coinciden con su posición de
+fila; en el archivo de nodos esa posición es su ID implícito. Las aristas de
+cada cara deben seguir el orden alrededor de ella. `material2` se conserva
+por el formato de entrada, pero no se usa: puedes poner cero. El código de
+`material` debe existir en `Propiedades.txt`; el código cero representa la
+matriz y los demás se cuentan como agregados.
+
+No basta con cambiar el nombre de archivos procedentes de otro programa.
+Las unidades deben ser consistentes; se recomienda usar metros para las
+coordenadas y pascales para los módulos elásticos. Puedes usar los archivos
+generados por el ejemplo como referencia del formato.
 
 Primero puedes comprobar tu malla con `--modo homogeneo`, igual que en el
 ejemplo anterior. Para calcular después la respuesta con sus materiales
@@ -142,9 +164,40 @@ respuesta: conviene analizar la matriz completa y la medida de anisotropía
 del resumen. Pasar la comprobación homogénea tampoco sustituye un estudio de
 convergencia al refinar la malla.
 
-Para conocer las convenciones y los límites del modelo, continúa con la
-[documentación del cálculo](docs/index.md). La [guía de arquitectura](docs/architecture.md)
-explica dónde está cada parte del código, y la [revisión técnica](docs/review.md)
-recoge las correcciones, las pruebas y las mediciones de rendimiento. Las
-[instrucciones para Hypatia](docs/hypatia.md) son una guía adicional para quienes
-trabajen en ese clúster; no son necesarias para seguir este README.
+
+Las filas y columnas de C siguen el orden `xx, yy, zz, xy, xz, yz`. Las
+componentes de deformación de corte son ingenieriles: por ejemplo, `gxy=1`
+corresponde a una componente tensorial de 0,5.
+
+## Ejecutar varias mallas
+
+Para procesar varias mallas en lote, organízalas en carpetas de caso y
+réplica. Dentro de cada réplica, la carpeta `VEM` contiene los cinco archivos
+de entrada:
+
+```text
+mis_mallas/
+  caso_01/
+    caso_01_R01/
+      VEM/
+    caso_01_R02/
+      VEM/
+```
+
+Primero consulta cuáles se han encontrado:
+
+```bash
+vem3d-batch-homogeneous --raiz mis_mallas --listar
+```
+
+Para comprobarlas con el material uniforme o calcular sus materiales reales:
+
+```bash
+vem3d-batch-homogeneous --raiz mis_mallas --procesos 1 --sin-campos
+vem3d-batch-heterogeneous --raiz mis_mallas --procesos 1 --sin-campos
+```
+
+Los resultados se guardan bajo esa raíz en `Resultados_Homogeneos` o
+`Resultados_Heterogeneos`. Empieza con un solo proceso: cada malla necesita su
+propia memoria. Usa `--help` en cualquiera de los comandos para consultar
+sus opciones.

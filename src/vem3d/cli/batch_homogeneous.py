@@ -1,35 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-batch_homogeneo_3d.py
-=====================
-Corre la verificación VEM 3D sobre TODAS las mallas de la carpeta 3D
-asignando las MISMAS propiedades a todos los elementos (E = 1e6, nu = 0.3).
+"""Comprueba varias mallas con E=1e6 y nu=0.3 en todos los elementos.
 
-Al ser el medio homogéneo, el campo lineal impuesto en el contorno es la
-solución exacta del problema, de modo que:
+Uso:
+  vem3d-batch-homogeneous --raiz mis_mallas --listar
+  vem3d-batch-homogeneous --raiz mis_mallas --procesos 1 --sin-campos
 
-  * el campo calculado debe aproximar el campo lineal (patch test), y
-  * la C homogenizada debe reproducir la C isotrópica teórica.
-
-Esto verifica la malla (conectividad cara-arista-nodo, orientación de las
-normales, volúmenes) y el ensamblaje, con independencia de la
-microestructura.
-
-Estructura esperada y salida: iguales a batch_heterogeneo_3d.py, pero en
-  <RAIZ_3D>/Resultados_Homogeneos/
-
-USO:
-  python batch_homogeneo_3d.py --raiz "D:/descargaaa/mallas_validadas_192/3D"
-  python batch_homogeneo_3d.py --raiz "..." --procesos 4
-  python batch_homogeneo_3d.py --raiz "..." --solo CA1 --tol 1e-8
-  python batch_homogeneo_3d.py --raiz "..." --listar
-
-Requiere pyamg para el solver por defecto:  pip install pyamg
-
-Nota sobre --procesos: cada proceso carga una malla 3D completa. Medido en
-una malla de 41 363 nodos / 124 089 gdl: 2.8 GB por proceso con --solver amg
-(de los cuales 2.2 GB son la propia K) y ~6.6 GB extrapolados con
---solver lu. El valor por defecto es 1; súbelo observando la memoria.
+La salida se guarda en <raiz>/Resultados_Homogeneos/. Cada proceso carga
+una malla completa; aumenta --procesos sólo si hay memoria suficiente.
 """
 
 import argparse
@@ -42,7 +19,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from .. import compat as core
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  CONFIGURACION RAPIDA  -  edita estas dos lineas y corre el archivo
+#  VALORES POR DEFECTO  -  configurables con --procesos y --raiz
 # ══════════════════════════════════════════════════════════════════════════════
 
 PROCESOS = 1  # cuantas mallas a la vez. Un numero fijo (1, 2, 4, 8...)

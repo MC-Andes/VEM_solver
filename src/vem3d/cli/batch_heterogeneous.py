@@ -1,42 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-batch_heterogeneo_3d.py
-=======================
-Corre la homogenización VEM 3D sobre TODAS las mallas de la carpeta 3D
-leyendo las propiedades reales de cada malla desde su propio
-Propiedades.txt (ID de material -> E, nu).
+"""Calcula varias mallas usando los materiales de cada Propiedades.txt.
 
-Estructura esperada:
-  <RAIZ_3D>/
-    CA1_A2_G1/
-      CA1_A2_G1_R01/VEM/  Input_nodos.txt  Input_aristas.txt
-                          Input_caras.txt  input_elements.txt
-                          Propiedades.txt
-      CA1_A2_G1_R02/VEM/  ...
-    CA1_A2_G2/
-      ...
+Uso:
+  vem3d-batch-heterogeneous --raiz mis_mallas --listar
+  vem3d-batch-heterogeneous --raiz mis_mallas --procesos 1 --sin-campos
 
-Salida:
-  <RAIZ_3D>/Resultados_Heterogeneos/
-    RESUMEN_GLOBAL.txt
-    RESUMEN_PROPIEDADES.csv
-    CA1_A2_G1/R01/  resumen.txt  C_equivalente.txt
-                    C_equivalente_fuerzas.txt  U_*.txt
-                    deformaciones_*.txt  esfuerzos_*.txt
-    ...
-
-USO:
-  python batch_heterogeneo_3d.py --raiz "D:/descargaaa/mallas_validadas_192/3D"
-  python batch_heterogeneo_3d.py --raiz "..." --procesos 4
-  python batch_heterogeneo_3d.py --raiz "..." --solo CA1
-  python batch_heterogeneo_3d.py --raiz "..." --listar
-
-Requiere pyamg para el solver por defecto:  pip install pyamg
-
-Nota sobre --procesos: cada proceso carga una malla 3D completa. Medido en
-una malla de 41 363 nodos / 124 089 gdl: 2.8 GB por proceso con --solver amg
-(de los cuales 2.2 GB son la propia K) y ~6.6 GB extrapolados con
---solver lu. El valor por defecto es 1; súbelo observando la memoria.
+La salida se guarda en <raiz>/Resultados_Heterogeneos/. Cada proceso carga
+una malla completa; aumenta --procesos sólo si hay memoria suficiente.
 """
 
 import argparse
@@ -49,7 +19,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from .. import compat as core
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  CONFIGURACION RAPIDA  -  edita estas dos lineas y corre el archivo
+#  VALORES POR DEFECTO  -  configurables con --procesos y --raiz
 # ══════════════════════════════════════════════════════════════════════════════
 
 PROCESOS = 1  # cuantas mallas a la vez. Un numero fijo (1, 2, 4, 8...)
