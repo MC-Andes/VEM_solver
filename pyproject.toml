@@ -4,13 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mc-andes-vem3d"
-version = "0.1.0"
-description = "Homogenización elástica VEM 3D de primer orden sobre mallas poliédricas"
+version = "0.2.0"
+description = "Homogenización elástica VEM y FEM en 2D y 3D"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["numpy>=1.26,<3", "scipy>=1.12,<2", "pyamg>=5.4.1,<6", "psutil>=5.9"]
 
 [project.scripts]
+vem2d-run = "vem2d.cli:main"
+vem2d-batch-homogeneous = "vem2d.cli:batch_homogeneous"
+vem2d-batch-heterogeneous = "vem2d.cli:batch_heterogeneous"
+fem-run = "femx.cli:main"
 vem3d-run = "vem3d.cli.single:main"
 vem3d-batch-homogeneous = "vem3d.cli.batch_homogeneous:main"
 vem3d-batch-heterogeneous = "vem3d.cli.batch_heterogeneous:main"
